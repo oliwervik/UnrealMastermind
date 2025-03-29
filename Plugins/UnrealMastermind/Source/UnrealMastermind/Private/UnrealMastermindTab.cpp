@@ -233,8 +233,6 @@ TSharedRef<SWidget> SUnrealMastermindTab::MakeBlueprintComboItemWidget(TSharedPt
 
 void SUnrealMastermindTab::SelectBlueprint(const FString& BlueprintName)
 {
-    UE_LOG(LogTemp, Warning, TEXT("Unreal Mastermind: Selecting blueprint by name: %s"), *BlueprintName);
-    
     // Find the blueprint in the available list
     TSharedPtr<FString> FoundItem;
     for (TSharedPtr<FString> Item : AvailableBlueprints)
@@ -249,14 +247,11 @@ void SUnrealMastermindTab::SelectBlueprint(const FString& BlueprintName)
     // If found, select it in the combo box
     if (FoundItem.IsValid())
     {
-        UE_LOG(LogTemp, Warning, TEXT("Unreal Mastermind: Found blueprint in dropdown, selecting it"));
         BlueprintSelectionComboBox->SetSelectedItem(FoundItem);
         // This should trigger OnBlueprintSelected which will update everything else
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("Unreal Mastermind: Blueprint not found in dropdown list"));
-        
         // Try to find the blueprint directly to refresh the list
         UObject* FoundObject = FindObject<UObject>(nullptr, *FString::Printf(TEXT("/Game/%s.%s"), 
             *BlueprintName, *BlueprintName));
@@ -295,11 +290,9 @@ void SUnrealMastermindTab::OnBlueprintSelected(TSharedPtr<FString> SelectedItem,
 		SelectedBlueprintText->SetText(FText::FromString(*SelectedItem));
 		
 		// Check if the selected blueprint has documentation and load it
-		UBlueprint* Blueprint = GetSelectedBlueprint();
-		if (Blueprint)
+		if (UBlueprint* Blueprint = GetSelectedBlueprint())
 		{
-			FString ExistingDocumentation = UBlueprintDocumentation::GetDocumentation(Blueprint);
-			if (!ExistingDocumentation.IsEmpty())
+			if (FString ExistingDocumentation = UBlueprintDocumentation::GetDocumentation(Blueprint); !ExistingDocumentation.IsEmpty())
 			{
 				// Existing documentation found, load it
 				GeneratedDocumentation = ExistingDocumentation;
@@ -325,30 +318,17 @@ UBlueprint* SUnrealMastermindTab::GetSelectedBlueprint() const
 {
 	if (!CurrentSelectedBlueprint.IsValid())
 		return nullptr;
-		
+
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	TArray<FAssetData> BlueprintAssets;
 	
 	FARFilter Filter;
 	Filter.ClassPaths.Add(UBlueprint::StaticClass()->GetClassPathName());
-	Filter.PackageNames.Add(*FString::Printf(TEXT("/Game/%s"), **CurrentSelectedBlueprint));
+	Filter.bRecursiveClasses = true;
 	
-	TArray<FAssetData> AssetData;
-	AssetRegistryModule.Get().GetAssets(Filter, AssetData);
+	AssetRegistryModule.Get().GetAssets(Filter, BlueprintAssets);
 	
-	for (const FAssetData& Asset : AssetData)
-	{
-		if (Asset.AssetName.ToString() == *CurrentSelectedBlueprint)
-		{
-			return Cast<UBlueprint>(Asset.GetAsset());
-		}
-	}
-	
-	// Try more general search if the first approach fails
-	TArray<FAssetData> AllAssets;
-	Filter.PackageNames.Empty();
-	AssetRegistryModule.Get().GetAssets(Filter, AllAssets);
-	
-	for (const FAssetData& Asset : AllAssets)
+	for (const FAssetData& Asset : BlueprintAssets)
 	{
 		if (Asset.AssetName.ToString() == *CurrentSelectedBlueprint)
 		{
@@ -416,11 +396,10 @@ FString SUnrealMastermindTab::ExtractBlueprintInfo(UBlueprint* Blueprint)
 	// Components (for Actor blueprints)
 	if (Blueprint->SimpleConstructionScript)
 	{
-		TArray<USCS_Node*> ComponentNodes = Blueprint->SimpleConstructionScript->GetAllNodes();
-		if (ComponentNodes.Num() > 0)
+		if (TArray<USCS_Node*> ComponentNodes = Blueprint->SimpleConstructionScript->GetAllNodes(); ComponentNodes.Num() > 0)
 		{
 			BlueprintInfo += TEXT("\nComponents:\n");
-			for (USCS_Node* Node : ComponentNodes)
+			for (const USCS_Node* Node : ComponentNodes)
 			{
 				BlueprintInfo += FString::Printf(TEXT("- %s (%s)\n"), 
 					*Node->GetVariableName().ToString(), 
@@ -524,7 +503,7 @@ FReply SUnrealMastermindTab::OnGenerateDocumentationClicked()
 	return FReply::Handled();
 }
 
-FReply SUnrealMastermindTab::OnSaveDocumentationClicked()
+FReply SUnrealMastermindTab::OnSaveDocumentationClicked() const
 {
 	UBlueprint* SelectedBlueprint = GetSelectedBlueprint();
 	if (!SelectedBlueprint || GeneratedDocumentation.IsEmpty())

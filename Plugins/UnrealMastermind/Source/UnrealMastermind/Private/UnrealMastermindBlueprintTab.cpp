@@ -27,9 +27,6 @@ void SUnrealMastermindBlueprintTab::Construct(const FArguments& InArgs, TWeakObj
     Blueprint = InBlueprint;
     TabActivationHandle = FDelegateHandle();
     
-    UE_LOG(LogTemp, Warning, TEXT("Unreal Mastermind: Constructing blueprint tab for %s"), 
-        Blueprint.IsValid() ? *Blueprint->GetName() : TEXT("Invalid Blueprint"));
-    
     // Load existing documentation if available
     RefreshDocumentation();
     
@@ -146,8 +143,6 @@ void SUnrealMastermindBlueprintTab::RefreshDocumentation()
         }
         return;
     }
-    
-    UE_LOG(LogTemp, Warning, TEXT("Unreal Mastermind: Refreshing documentation for %s"), *Blueprint->GetName());
     
     // Check if documentation exists
     if (UBlueprintDocumentation::HasDocumentation(Blueprint.Get()))

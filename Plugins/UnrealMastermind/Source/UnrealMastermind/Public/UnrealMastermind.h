@@ -17,7 +17,7 @@ public:
 	
 	/** Callback for clicking the plugin button */
 	void PluginButtonClicked();
-	void HandleModulesChanged(FName ModuleName, EModuleChangeReason Reason);
+	void HandleModulesChanged(FName ModuleName, EModuleChangeReason Reason) const;
 	FDelegateHandle ModulesChangedHandle;
 	
 private:

@@ -9,6 +9,8 @@
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
 #include "UnrealMastermindTab.h"
+#include "Blueprint/UserWidget.h"
+#include "GameFramework/Character.h"
 
 #define LOCTEXT_NAMESPACE "UnrealMastermindBlueprintDetails"
 
@@ -20,40 +22,46 @@ void FBlueprintDetailsCustomization::Register()
     if (!bIsRegistered)
     {
         FPropertyEditorModule& PropertyModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
-
-        // Iterate through all UClasses at runtime
+       
+        //Register UBlueprint class itself (for Blueprint assets in the editor)
+        PropertyModule.RegisterCustomClassLayout(
+            UBlueprint::StaticClass()->GetFName(),
+            FOnGetDetailCustomizationInstance::CreateStatic(&FBlueprintDetailsCustomization::MakeInstance)
+        );
+        
+        //Register important base classes that are commonly used as Blueprint parents
+        TArray<UClass*> BlueprintBaseClasses;
+        BlueprintBaseClasses.Add(AActor::StaticClass());
+        BlueprintBaseClasses.Add(UActorComponent::StaticClass());
+        BlueprintBaseClasses.Add(APawn::StaticClass());
+        BlueprintBaseClasses.Add(ACharacter::StaticClass());
+        BlueprintBaseClasses.Add(UUserWidget::StaticClass());
+        
+        //We can add other important base classes here if needed
+        
+        for (UClass* BaseClass : BlueprintBaseClasses)
+        {
+            PropertyModule.RegisterCustomClassLayout(
+                BaseClass->GetFName(),
+                FOnGetDetailCustomizationInstance::CreateStatic(&FBlueprintDetailsCustomization::MakeInstance)
+            );
+        }
+        
+        //Register all Blueprint-generated classes
         for (TObjectIterator<UClass> It; It; ++It)
         {
             UClass* Class = *It;
-
-            // Ensure it's a UObject-derived UCLASS and not an abstract class
-            if (Class && !Class->HasAnyClassFlags(CLASS_Abstract))
+            
+            // Check if this is a Blueprint-generated class
+            if (Class && Class->ClassGeneratedBy && Cast<UBlueprint>(Class->ClassGeneratedBy))
             {
-                // Register the same custom layout for all UClasses
                 PropertyModule.RegisterCustomClassLayout(
-                    Class->GetFName(), 
+                    Class->GetFName(),
                     FOnGetDetailCustomizationInstance::CreateStatic(&FBlueprintDetailsCustomization::MakeInstance)
                 );
-                UE_LOG(LogTemp, Warning, TEXT("Registered customization for: %s"), *Class->GetName());
             }
         }
-        
-        // // Register for all relevant classes
-        // TArray<UClass*> ClassesToCustomize;
-        // ClassesToCustomize.Add(UBlueprint::StaticClass());
-        // ClassesToCustomize.Add(UBlueprintGeneratedClass::StaticClass());
-        //
-        // UClass* BlueprintUClass= LoadClass<UClass>("Blueprint '/Game/Blueprint.Blueprint_C'");
-        //
-        // for (UClass* Class : ClassesToCustomize)
-        // {
-        //     PropertyModule.RegisterCustomClassLayout(
-        //         Class->GetFName(),
-        //         FOnGetDetailCustomizationInstance::CreateStatic(&FBlueprintDetailsCustomization::MakeInstance)
-        //     );
-        //     UE_LOG(LogTemp, Warning, TEXT("Registered customization for: %s"), *Class->GetName());
-        // }
-        
+
         bIsRegistered = true;
         PropertyModule.NotifyCustomizationModuleChanged();
     }
@@ -78,11 +86,7 @@ void FBlueprintDetailsCustomization::Unregister()
                 }
             }
         }
-        
-        // FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
-        // PropertyModule.UnregisterCustomClassLayout(UBlueprint::StaticClass()->GetFName());
         bIsRegistered = false;
-        UE_LOG(LogTemp, Warning, TEXT("Unreal Mastermind: Unregistered Blueprint details customization"));
     }
 }
 
@@ -93,23 +97,14 @@ TSharedRef<IDetailCustomization> FBlueprintDetailsCustomization::MakeInstance()
 
 void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 {
-    UE_LOG(LogTemp, Warning, TEXT("### CUSTOMIZE DETAILS FINALLY CALLED ###"));
-    UE_LOG(LogTemp, Warning, TEXT("Unreal Mastermind: Customizing Blueprint details"));
-    
     // Get all selected objects
     TArray<TWeakObjectPtr<UObject>> SelectedObjects;
     DetailBuilder.GetObjectsBeingCustomized(SelectedObjects);
-    
-    UE_LOG(LogTemp, Warning, TEXT("Found %d objects in details panel"), SelectedObjects.Num());
     
     for (TWeakObjectPtr<UObject> Object : SelectedObjects)
     {
         if (Object.IsValid())
         {
-            UE_LOG(LogTemp, Warning, TEXT("Object in details: %s (Class: %s)"), 
-                *Object->GetName(), 
-                *Object->GetClass()->GetName());
-            
             // With this more comprehensive approach:
             UObject* ObjectPtr = Object.Get();
             
@@ -119,12 +114,9 @@ void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
             // If not a direct blueprint, check if it's a blueprint class instance
             if (!SelectedBlueprint.IsValid())
             {
-                UClass* Class = ObjectPtr->GetClass();
-                if (Class && Class->ClassGeneratedBy)
+                if (const UClass* Class = ObjectPtr->GetClass(); Class && Class->ClassGeneratedBy)
                 {
                     SelectedBlueprint = Cast<UBlueprint>(Class->ClassGeneratedBy);
-                    UE_LOG(LogTemp, Warning, TEXT("Found Blueprint from ClassGeneratedBy: %s"), 
-                        SelectedBlueprint.IsValid() ? *SelectedBlueprint->GetName() : TEXT("Invalid"));
                 }
             }
         }
@@ -133,7 +125,6 @@ void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
     // If no blueprint found, exit
     if (!SelectedBlueprint.IsValid())
     {
-        UE_LOG(LogTemp, Warning, TEXT("Unreal Mastermind: No valid Blueprint found in details view"));
         return;
     }
     
@@ -232,7 +223,7 @@ void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
     }
 }
 
-FReply FBlueprintDetailsCustomization::OnViewDocumentationClicked()
+FReply FBlueprintDetailsCustomization::OnViewDocumentationClicked() const
 {
     if (!SelectedBlueprint.IsValid() || !HasDocumentation())
         return FReply::Handled();
@@ -247,32 +238,25 @@ FReply FBlueprintDetailsCustomization::OnViewDocumentationClicked()
         
         // Select the current blueprint and view docs
         MastermindTab.Get().SelectBlueprint(SelectedBlueprint->GetName());
-        
-        UE_LOG(LogTemp, Warning, TEXT("Unreal Mastermind: Viewing documentation for blueprint: %s"), 
-            *SelectedBlueprint->GetName());
     }
     
     return FReply::Handled();
 }
 
-FReply FBlueprintDetailsCustomization::OnGenerateDocumentationClicked()
+FReply FBlueprintDetailsCustomization::OnGenerateDocumentationClicked() const
 {
     if (!SelectedBlueprint.IsValid())
         return FReply::Handled();
     
     // Open the documentation generation window
-    TSharedPtr<SDockTab> DocTab = FGlobalTabmanager::Get()->TryInvokeTab(FName("UnrealMastermind"));
-    if (DocTab.IsValid())
+    if (const TSharedPtr<SDockTab> DocTab = FGlobalTabmanager::Get()->TryInvokeTab(FName("UnrealMastermind")); DocTab.IsValid())
     {
         // Get the tab content
-        TSharedRef<SUnrealMastermindTab> MastermindTab = 
+        const TSharedRef<SUnrealMastermindTab> MastermindTab = 
             StaticCastSharedRef<SUnrealMastermindTab>(DocTab->GetContent());
         
         // Select the current blueprint
         MastermindTab.Get().SelectBlueprint(SelectedBlueprint->GetName());
-        
-        UE_LOG(LogTemp, Warning, TEXT("Unreal Mastermind: Generating documentation for blueprint: %s"), 
-            *SelectedBlueprint->GetName());
     }
     
     return FReply::Handled();

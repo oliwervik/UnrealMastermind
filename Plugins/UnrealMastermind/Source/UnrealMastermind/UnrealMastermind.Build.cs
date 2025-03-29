@@ -46,6 +46,7 @@ public class UnrealMastermind : ModuleRules
 				"EditorStyle",
 				"AssetRegistry",
 				"PropertyEditor",
+				"UMG",
 				"Projects",
 				"DeveloperSettings",
 				"HTTP",

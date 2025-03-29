@@ -34,7 +34,7 @@ private:
 	
 	// Button Callbacks
 	FReply OnGenerateDocumentationClicked();
-	FReply OnSaveDocumentationClicked();
+	FReply OnSaveDocumentationClicked() const;
 	
 	// Blueprint Functions
 	void PopulateAvailableBlueprints();

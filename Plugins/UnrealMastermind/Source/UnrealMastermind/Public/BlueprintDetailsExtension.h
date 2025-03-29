@@ -41,8 +41,8 @@ private:
     TWeakObjectPtr<UBlueprint> SelectedBlueprint;
 
     /** Button handlers */
-    FReply OnViewDocumentationClicked();
-    FReply OnGenerateDocumentationClicked();
+    FReply OnViewDocumentationClicked() const;
+    FReply OnGenerateDocumentationClicked() const;
     
     /** Documentation retrieval */
     bool HasDocumentation() const;
