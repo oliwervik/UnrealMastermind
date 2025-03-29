@@ -17,7 +17,7 @@ public:
 	void Construct(const FArguments& InArgs);
 	
 	// Update loading status
-	void SetGenerationStatus(bool bIsGenerating, float Progress = 0.0f, const FString& StatusMessage = TEXT(""));
+	void SetGenerationStatus(bool bGenerating, float Progress = 0.0f, const FString& StatusMessage = TEXT(""));
 	void SelectBlueprint(const FString& BlueprintName);
 private:
 	// UI Elements

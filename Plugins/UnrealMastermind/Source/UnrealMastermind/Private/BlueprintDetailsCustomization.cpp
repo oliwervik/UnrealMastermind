@@ -20,20 +20,39 @@ void FBlueprintDetailsCustomization::Register()
     if (!bIsRegistered)
     {
         FPropertyEditorModule& PropertyModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
-        
-        // Register for all relevant classes
-        TArray<UClass*> ClassesToCustomize;
-        ClassesToCustomize.Add(UBlueprint::StaticClass());
-        ClassesToCustomize.Add(UBlueprintGeneratedClass::StaticClass());
-        
-        for (UClass* Class : ClassesToCustomize)
+
+        // Iterate through all UClasses at runtime
+        for (TObjectIterator<UClass> It; It; ++It)
         {
-            PropertyModule.RegisterCustomClassLayout(
-                Class->GetFName(),
-                FOnGetDetailCustomizationInstance::CreateStatic(&FBlueprintDetailsCustomization::MakeInstance)
-            );
-            UE_LOG(LogTemp, Warning, TEXT("Registered customization for: %s"), *Class->GetName());
+            UClass* Class = *It;
+
+            // Ensure it's a UObject-derived UCLASS and not an abstract class
+            if (Class && !Class->HasAnyClassFlags(CLASS_Abstract))
+            {
+                // Register the same custom layout for all UClasses
+                PropertyModule.RegisterCustomClassLayout(
+                    Class->GetFName(), 
+                    FOnGetDetailCustomizationInstance::CreateStatic(&FBlueprintDetailsCustomization::MakeInstance)
+                );
+                UE_LOG(LogTemp, Warning, TEXT("Registered customization for: %s"), *Class->GetName());
+            }
         }
+        
+        // // Register for all relevant classes
+        // TArray<UClass*> ClassesToCustomize;
+        // ClassesToCustomize.Add(UBlueprint::StaticClass());
+        // ClassesToCustomize.Add(UBlueprintGeneratedClass::StaticClass());
+        //
+        // UClass* BlueprintUClass= LoadClass<UClass>("Blueprint '/Game/Blueprint.Blueprint_C'");
+        //
+        // for (UClass* Class : ClassesToCustomize)
+        // {
+        //     PropertyModule.RegisterCustomClassLayout(
+        //         Class->GetFName(),
+        //         FOnGetDetailCustomizationInstance::CreateStatic(&FBlueprintDetailsCustomization::MakeInstance)
+        //     );
+        //     UE_LOG(LogTemp, Warning, TEXT("Registered customization for: %s"), *Class->GetName());
+        // }
         
         bIsRegistered = true;
         PropertyModule.NotifyCustomizationModuleChanged();
@@ -45,8 +64,23 @@ void FBlueprintDetailsCustomization::Unregister()
 {
     if (bIsRegistered)
     {
-        FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
-        PropertyModule.UnregisterCustomClassLayout(UBlueprint::StaticClass()->GetFName());
+        if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
+        {
+            FPropertyEditorModule& PropertyModule = 
+                FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
+
+            for (TObjectIterator<UClass> It; It; ++It)
+            {
+                UClass* Class = *It;
+                if (Class)
+                {
+                    PropertyModule.UnregisterCustomClassLayout(Class->GetFName());
+                }
+            }
+        }
+        
+        // FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
+        // PropertyModule.UnregisterCustomClassLayout(UBlueprint::StaticClass()->GetFName());
         bIsRegistered = false;
         UE_LOG(LogTemp, Warning, TEXT("Unreal Mastermind: Unregistered Blueprint details customization"));
     }
@@ -75,21 +109,22 @@ void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
             UE_LOG(LogTemp, Warning, TEXT("Object in details: %s (Class: %s)"), 
                 *Object->GetName(), 
                 *Object->GetClass()->GetName());
-                
-            if (Object->IsA<UBlueprint>())
+            
+            // With this more comprehensive approach:
+            UObject* ObjectPtr = Object.Get();
+            
+            // Direct approach - is it already a UBlueprint?
+            SelectedBlueprint = Cast<UBlueprint>(ObjectPtr);
+            
+            // If not a direct blueprint, check if it's a blueprint class instance
+            if (!SelectedBlueprint.IsValid())
             {
-                SelectedBlueprint = Cast<UBlueprint>(Object.Get());
-                UE_LOG(LogTemp, Warning, TEXT("Found UBlueprint: %s"), *SelectedBlueprint->GetName());
-            }
-            else if (Object->IsA<UBlueprintGeneratedClass>())
-            {
-                UE_LOG(LogTemp, Warning, TEXT("Found UBlueprintGeneratedClass: %s"), *Object->GetName());
-                // Try to get the blueprint from the generated class
-                UBlueprintGeneratedClass* BPClass = Cast<UBlueprintGeneratedClass>(Object.Get());
-                SelectedBlueprint = Cast<UBlueprint>(BPClass->ClassGeneratedBy);
-                if (SelectedBlueprint.IsValid())
+                UClass* Class = ObjectPtr->GetClass();
+                if (Class && Class->ClassGeneratedBy)
                 {
-                    UE_LOG(LogTemp, Warning, TEXT("Found parent UBlueprint: %s"), *SelectedBlueprint->GetName());
+                    SelectedBlueprint = Cast<UBlueprint>(Class->ClassGeneratedBy);
+                    UE_LOG(LogTemp, Warning, TEXT("Found Blueprint from ClassGeneratedBy: %s"), 
+                        SelectedBlueprint.IsValid() ? *SelectedBlueprint->GetName() : TEXT("Invalid"));
                 }
             }
         }

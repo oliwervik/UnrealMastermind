@@ -190,9 +190,9 @@ void SUnrealMastermindTab::Construct(const FArguments& InArgs)
 	SetGenerationStatus(false);
 }
 
-void SUnrealMastermindTab::SetGenerationStatus(bool bIsGenerating, float Progress, const FString& StatusMessage)
+void SUnrealMastermindTab::SetGenerationStatus(bool bGenerating, float Progress, const FString& StatusMessage)
 {
-	this->bIsGenerating = bIsGenerating;
+	this->bIsGenerating = bGenerating;
 	
 	if (GenerationProgressBar.IsValid())
 	{
