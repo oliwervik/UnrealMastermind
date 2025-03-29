@@ -1,4 +1,4 @@
-#include "BlueprintDetailsExtension.h"
+#include "..\Public\BlueprintDetailsCustomization.h"
 #include "BlueprintDocumentation.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
@@ -8,6 +8,7 @@
 #include "Widgets/SBoxPanel.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
+#include "UnrealMastermindSettings.h"
 #include "UnrealMastermindTab.h"
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/Character.h"
@@ -196,6 +197,8 @@ void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
     // If documentation exists, show a preview
     if (HasDocumentation())
     {
+        const UUnrealMastermindSettings* Settings = GetDefault<UUnrealMastermindSettings>();
+        
         Category.AddCustomRow(FText::FromString("Documentation Preview"))
         .WholeRowContent()
         [
@@ -207,12 +210,12 @@ void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
                 .Padding(FMargin(4.0f))
                 [
                     SNew(STextBlock)
-                    .Text_Lambda([this]() -> FText {
+                    .Text_Lambda([this, Settings]() -> FText {
                         FString DocText = GetDocumentation();
-                        // Limit preview to first 200 characters
-                        if (DocText.Len() > 200)
+                        int32 MaxChars = Settings->DocumentationPreviewChars;
+                        if (DocText.Len() > MaxChars)
                         {
-                            DocText = DocText.Left(200) + TEXT("...");
+                            DocText = DocText.Left(MaxChars) + TEXT("...");
                         }
                         return FText::FromString(DocText);
                     })

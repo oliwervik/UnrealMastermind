@@ -4,28 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "IDetailCustomization.h"
-#include "IDetailCustomNodeBuilder.h"
-
-class FBlueprintDetailsExtension : public IDetailCustomNodeBuilder, public TSharedFromThis<FBlueprintDetailsExtension>
-{
-public:
-    FBlueprintDetailsExtension(TWeakObjectPtr<UBlueprint> InBlueprint);
-    
-    // IDetailCustomNodeBuilder Interface
-    virtual void SetOnRebuildChildren(FSimpleDelegate InOnRegenerateChildren) override {}
-    virtual void GenerateHeaderRowContent(FDetailWidgetRow& NodeRow) override;
-    virtual void GenerateChildContent(IDetailChildrenBuilder& ChildrenBuilder) override;
-    virtual void Tick(float DeltaTime) override {}
-    virtual bool RequiresTick() const override { return false; }
-    virtual bool InitiallyCollapsed() const override { return false; }
-    virtual FName GetName() const override { return TEXT("UnrealMastermindDocs"); }
-    
-private:
-    TWeakObjectPtr<UBlueprint> Blueprint;
-    
-    FReply OnViewDocumentationClicked();
-    FReply OnGenerateDocumentationClicked();
-};
 
 class FBlueprintDetailsCustomization : public IDetailCustomization
 {

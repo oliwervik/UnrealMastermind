@@ -8,7 +8,7 @@
 #include "Widgets/Docking/SDockTab.h"
 #include "ToolMenus.h"
 #include "PropertyEditorModule.h"
-#include "BlueprintDetailsExtension.h"
+#include "..\Public\BlueprintDetailsCustomization.h"
 #include "UnrealMastermindBlueprintTab.h"
 
 static const FName UnrealMastermindTabName("UnrealMastermind");

@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BlueprintDocumentationSettings.h"
 #include "Widgets/SCompoundWidget.h"
 #include "EdGraph/EdGraphNode.h"
 #include "Widgets/Input/SMultiLineEditableTextBox.h"
+#include "Widgets/Text/SRichTextBlock.h"
 #include "Widgets/Notifications/SProgressBar.h"
 
 class SUnrealMastermindTab : public SCompoundWidget
@@ -26,6 +28,8 @@ private:
 	TSharedPtr<STextBlock> SelectedBlueprintText;
 	TSharedPtr<SMultiLineEditableTextBox> DocumentationTextBox;
 	TSharedPtr<SEditableTextBox> CustomPromptTextBox;
+	TArray<TSharedPtr<FString>> DetailLevelOptions;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> DetailLevelComboBox;
 	
 	// Loading indicator elements
 	TSharedPtr<SProgressBar> GenerationProgressBar;
@@ -41,11 +45,21 @@ private:
 	void OnBlueprintSelected(TSharedPtr<FString> SelectedItem, ESelectInfo::Type SelectInfo);
 	TSharedRef<SWidget> MakeBlueprintComboItemWidget(TSharedPtr<FString> BlueprintName);
 	UBlueprint* GetSelectedBlueprint() const;
-	FString ExtractBlueprintInfo(UBlueprint* Blueprint);
-	
+	void ExtractEventGraphInfo(UBlueprint* Blueprint, const FBlueprintDocumentationSettings& Settings,
+	                           FString& BlueprintInfo);
+	void ExtractFunctionGraphInfo(UBlueprint* Blueprint, const FBlueprintDocumentationSettings& Settings,
+	                              FString& BlueprintInfo);
+	void ExtractVariableInfo(UBlueprint* Blueprint, FString& BlueprintInfo) const;
+	FString ExtractBlueprintInfo(UBlueprint* Blueprint, const FBlueprintDocumentationSettings& Settings);
+	void AddImportantComponentProperties(FString& BlueprintInfo, UActorComponent* Component, const USCS_Node* Node) const;
+	void TraceExecutionFlow(UEdGraphPin* ExecPin, FString& BlueprintInfo, int32 Depth, int32 MaxDepth);
+	FString GetPinValue(UEdGraphPin* Pin) const;
+
 	// Documentation Generation
 	TSharedPtr<FString> CurrentSelectedBlueprint;
 	FString GeneratedDocumentation;
+
+	void AddAllComponentProperties(FString& BlueprintInfo, UActorComponent* Component, const USCS_Node* Node, const TArray<FString>& IgnoredPrefixes) const;
 	
 	// Generation status
 	bool bIsGenerating;
