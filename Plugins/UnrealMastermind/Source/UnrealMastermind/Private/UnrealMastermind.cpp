@@ -1,4 +1,6 @@
-// Copyright Froströk. All Rights Reserved.
+// Copyright © Froströk. All Rights Reserved.
+// This plugin is governed by the Unreal Engine Marketplace EULA.
+// This software cannot be redistributed, modified, or resold outside of the original purchase.
 
 #include "UnrealMastermind.h"
 
@@ -8,8 +10,7 @@
 #include "Widgets/Docking/SDockTab.h"
 #include "ToolMenus.h"
 #include "PropertyEditorModule.h"
-#include "..\Public\BlueprintDetailsCustomization.h"
-#include "UnrealMastermindBlueprintTab.h"
+#include "BlueprintDetailsCustomization.h"
 
 static const FName UnrealMastermindTabName("UnrealMastermind");
 
@@ -34,7 +35,7 @@ void FUnrealMastermindModule::StartupModule()
 	
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(UnrealMastermindTabName, FOnSpawnTab::CreateRaw(this, &FUnrealMastermindModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FUnrealMastermindTabTitle", "Unreal Mastermind"))
-		.SetMenuType(ETabSpawnerMenuType::Hidden);
+		.SetMenuType(ETabSpawnerMenuType::Hidden).SetIcon(FSlateIcon("UnrealMastermindStyle", "UnrealMastermind.TabIcon"));
 
 	// Check if PropertyEditor is loaded
 	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
@@ -45,10 +46,6 @@ void FUnrealMastermindModule::StartupModule()
 	{
 		FModuleManager::Get().OnModulesChanged().AddRaw(this, &FUnrealMastermindModule::HandleModulesChanged);
 	}
-    
-	// Initialize Blueprint tab extension
-	BlueprintTabExtension = MakeShareable(new FUnrealMastermindBlueprintTabExtension());
-	BlueprintTabExtension->Initialize();
 }
 
 void FUnrealMastermindModule::HandleModulesChanged(FName ModuleName, EModuleChangeReason Reason) const
@@ -70,13 +67,6 @@ void FUnrealMastermindModule::ShutdownModule()
 	FBlueprintDetailsCustomization::Unregister();
 	
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(UnrealMastermindTabName);
-	
-	// Shutdown Blueprint tab extension
-	if (BlueprintTabExtension.IsValid())
-	{
-		BlueprintTabExtension->Shutdown();
-		BlueprintTabExtension.Reset();
-	}
 }
 
 
@@ -99,24 +89,12 @@ void FUnrealMastermindModule::RegisterMenus()
 	// Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
 	FToolMenuOwnerScoped OwnerScoped(this);
 
-	// Add menu extension to the "Window" menu in the editor
+	// Add menu extension to the "Tools" menu in the editor
 	{
-		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
+		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Tools");
 		{
 			FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
 			Section.AddMenuEntryWithCommandList(FUnrealMastermindCommands::Get().OpenPluginWindow, PluginCommands);
-		}
-	}
-
-	// Add toolbar button
-	{
-		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar");
-		{
-			FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("Settings");
-			{
-				FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FUnrealMastermindCommands::Get().OpenPluginWindow));
-				Entry.SetCommandList(PluginCommands);
-			}
 		}
 	}
 }

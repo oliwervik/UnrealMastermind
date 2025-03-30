@@ -1,4 +1,6 @@
-// Copyright YourCompany. All Rights Reserved.
+// Copyright © Froströk. All Rights Reserved.
+// This plugin is governed by the Unreal Engine Marketplace EULA.
+// This software cannot be redistributed, modified, or resold outside of the original purchase.
 
 #include "BlueprintDocumentation.h"
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -17,13 +19,13 @@ bool UBlueprintDocumentation::SaveDocumentation(UBlueprint* Blueprint, const FSt
 		return false;
 
 	// Create a JSON object to store the documentation
-	TSharedPtr<FJsonObject> DocObject = MakeShareable(new FJsonObject);
+	const TSharedPtr<FJsonObject> DocObject = MakeShareable(new FJsonObject);
 	DocObject->SetStringField("documentation", Documentation);
 	DocObject->SetStringField("timestamp", FDateTime::Now().ToString());
 
 	// Convert to string
 	FString DocJson;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&DocJson);
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&DocJson);
 	FJsonSerializer::Serialize(DocObject.ToSharedRef(), Writer);
 
 	// Get the package
@@ -67,7 +69,7 @@ bool UBlueprintDocumentation::SaveDocumentation(UBlueprint* Blueprint, const FSt
 		}
 
 		// Use UPackage::SavePackage to save the asset
-		bool bSuccess = UPackage::SavePackage(Package, nullptr, *PackageFileName, SaveArgs);
+		const bool bSuccess = UPackage::SavePackage(Package, nullptr, *PackageFileName, SaveArgs);
 
 
 		// Also notify the asset registry that the asset has changed
@@ -109,7 +111,7 @@ FString UBlueprintDocumentation::GetDocumentation(UBlueprint* Blueprint)
 
 	// Parse the JSON
 	TSharedPtr<FJsonObject> DocObject;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(DocJson);
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(DocJson);
 	if (FJsonSerializer::Deserialize(Reader, DocObject) && DocObject.IsValid())
 	{
 		// Extract the documentation field

@@ -1,4 +1,8 @@
-#include "..\Public\BlueprintDetailsCustomization.h"
+// Copyright © Froströk. All Rights Reserved.
+// This plugin is governed by the Unreal Engine Marketplace EULA.
+// This software cannot be redistributed, modified, or resold outside of the original purchase.
+
+#include "BlueprintDetailsCustomization.h"
 #include "BlueprintDocumentation.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
@@ -15,7 +19,6 @@
 
 #define LOCTEXT_NAMESPACE "UnrealMastermindBlueprintDetails"
 
-// Static member initialization
 bool FBlueprintDetailsCustomization::bIsRegistered = false;
 
 void FBlueprintDetailsCustomization::Register()
@@ -37,7 +40,6 @@ void FBlueprintDetailsCustomization::Register()
         BlueprintBaseClasses.Add(APawn::StaticClass());
         BlueprintBaseClasses.Add(ACharacter::StaticClass());
         BlueprintBaseClasses.Add(UUserWidget::StaticClass());
-        
         //We can add other important base classes here if needed
         
         for (UClass* BaseClass : BlueprintBaseClasses)
@@ -106,10 +108,8 @@ void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
     {
         if (Object.IsValid())
         {
-            // With this more comprehensive approach:
             UObject* ObjectPtr = Object.Get();
             
-            // Direct approach - is it already a UBlueprint?
             SelectedBlueprint = Cast<UBlueprint>(ObjectPtr);
             
             // If not a direct blueprint, check if it's a blueprint class instance
@@ -131,8 +131,8 @@ void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
     
     // Create a custom category
     IDetailCategoryBuilder& Category = DetailBuilder.EditCategory(
-        "AI Documentation",
-        FText::FromString("AI Documentation"),
+        "Documentation",
+        FText::FromString("Documentation"),
         ECategoryPriority::Important
     );
     
@@ -153,16 +153,11 @@ void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
                 FText::FromString("Available") : 
                 FText::FromString("Not Available");
         })
-        .ColorAndOpacity_Lambda([this]() -> FSlateColor {
-            return HasDocumentation() ? 
-                FSlateColor(FLinearColor(0.0f, 0.8f, 0.0f)) : 
-                FSlateColor(FLinearColor(0.8f, 0.0f, 0.0f));
-        })
         .Font(IDetailLayoutBuilder::GetDetailFont())
     ];
     
     // Add buttons row
-    Category.AddCustomRow(FText::FromString("AI Documentation Actions"))
+    Category.AddCustomRow(FText::FromString("Documentation Actions"))
     .WholeRowContent()
     [
         SNew(SHorizontalBox)
@@ -212,8 +207,7 @@ void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
                     SNew(STextBlock)
                     .Text_Lambda([this, Settings]() -> FText {
                         FString DocText = GetDocumentation();
-                        int32 MaxChars = Settings->DocumentationPreviewChars;
-                        if (DocText.Len() > MaxChars)
+                        if (const int32 MaxChars = Settings->DocumentationPreviewChars; DocText.Len() > MaxChars)
                         {
                             DocText = DocText.Left(MaxChars) + TEXT("...");
                         }

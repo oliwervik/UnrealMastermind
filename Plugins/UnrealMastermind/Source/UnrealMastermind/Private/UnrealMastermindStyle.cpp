@@ -1,4 +1,6 @@
-// Copyright Froströk. All Rights Reserved.
+// Copyright © Froströk. All Rights Reserved.
+// This plugin is governed by the Unreal Engine Marketplace EULA.
+// This software cannot be redistributed, modified, or resold outside of the original purchase.
 
 #include "UnrealMastermindStyle.h"
 #include "Styling/SlateStyleRegistry.h"
@@ -34,6 +36,7 @@ FName FUnrealMastermindStyle::GetStyleSetName()
 
 const FVector2D Icon16x16(16.0f, 16.0f);
 const FVector2D Icon20x20(20.0f, 20.0f);
+const FVector2D Icon32x32(32.0f, 32.0f);
 const FVector2D Icon40x40(40.0f, 40.0f);
 
 TSharedRef<FSlateStyleSet> FUnrealMastermindStyle::Create()
@@ -41,7 +44,11 @@ TSharedRef<FSlateStyleSet> FUnrealMastermindStyle::Create()
 	TSharedRef<FSlateStyleSet> Style = MakeShareable(new FSlateStyleSet("UnrealMastermindStyle"));
 	Style->SetContentRoot(IPluginManager::Get().FindPlugin("UnrealMastermind")->GetBaseDir() / TEXT("Resources"));
 
-	Style->Set("UnrealMastermind.OpenPluginWindow", new IMAGE_BRUSH(TEXT("ButtonIcon_40x"), Icon40x40));
+	Style->Set("UnrealMastermind.OpenPluginWindow", new IMAGE_BRUSH(TEXT("App_512x"), Icon40x40));
+	
+	Style->Set("UnrealMastermind.TabIcon", new IMAGE_BRUSH(TEXT("App_512x"), Icon16x16));
+	
+	Style->Set("UnrealMastermind.LargeTabIcon",new IMAGE_BRUSH(TEXT("App_512x"), Icon32x32));
 	
 	return Style;
 }

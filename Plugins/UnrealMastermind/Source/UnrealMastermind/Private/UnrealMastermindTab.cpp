@@ -1,4 +1,6 @@
-// Copyright Froströk. All Rights Reserved.
+// Copyright © Froströk. All Rights Reserved.
+// This plugin is governed by the Unreal Engine Marketplace EULA.
+// This software cannot be redistributed, modified, or resold outside of the original purchase.
 
 #include "UnrealMastermindTab.h"
 #include "LLMConnector.h"
@@ -20,7 +22,6 @@
 #include "Engine/SimpleConstructionScript.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
-#include "Components/RichTextBlockDecorator.h"
 
 void SUnrealMastermindTab::Construct(const FArguments& InArgs)
 {
@@ -402,20 +403,12 @@ void SUnrealMastermindTab::SelectBlueprint(const FString& BlueprintName)
 	if (FoundItem.IsValid())
 	{
 		BlueprintSelectionComboBox->SetSelectedItem(FoundItem);
-		// This should trigger OnBlueprintSelected which will update everything else
 	}
 	else
 	{
 		// Try to find the blueprint directly to refresh the list
 		UObject* FoundObject = FindObject<UObject>(nullptr, *FString::Printf(TEXT("/Game/%s.%s"),
 		                                                                     *BlueprintName, *BlueprintName));
-
-		if (!FoundObject)
-		{
-			// Try another common pattern
-			FoundObject = FindObject<UObject>(nullptr, *FString::Printf(TEXT("/Game/Blueprints/%s.%s"),
-			                                                            *BlueprintName, *BlueprintName));
-		}
 
 		if (FoundObject && FoundObject->IsA<UBlueprint>())
 		{
@@ -473,7 +466,7 @@ UBlueprint* SUnrealMastermindTab::GetSelectedBlueprint() const
 	if (!CurrentSelectedBlueprint.IsValid())
 		return nullptr;
 
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<
+	const FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<
 		FAssetRegistryModule>("AssetRegistry");
 	TArray<FAssetData> BlueprintAssets;
 
@@ -828,8 +821,8 @@ FString SUnrealMastermindTab::GetPinValue(UEdGraphPin* Pin) const
 	// For connected pins, show what they connect to
 	if (Pin->LinkedTo.Num() > 0)
 	{
-		UEdGraphPin* ConnectedPin = Pin->LinkedTo[0];
-		UEdGraphNode* ConnectedNode = ConnectedPin->GetOwningNode();
+		const UEdGraphPin* ConnectedPin = Pin->LinkedTo[0];
+		const UEdGraphNode* ConnectedNode = ConnectedPin->GetOwningNode();
 		return FString::Printf(
 			TEXT("Connected to %s"), *ConnectedNode->GetNodeTitle(ENodeTitleType::ListView).ToString());
 	}

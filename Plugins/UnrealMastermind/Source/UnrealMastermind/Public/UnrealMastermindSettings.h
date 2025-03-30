@@ -1,4 +1,6 @@
-// Copyright Froströk. All Rights Reserved.
+// Copyright © Froströk. All Rights Reserved.
+// This plugin is governed by the Unreal Engine Marketplace EULA.
+// This software cannot be redistributed, modified, or resold outside of the original purchase.
 
 #pragma once
 
@@ -22,81 +24,79 @@ class UNREALMASTERMIND_API UUnrealMastermindSettings : public UDeveloperSettings
 public:
 	UUnrealMastermindSettings();
 
-	UPROPERTY(config, EditAnywhere, Category="Documentation Generation")
-	int32 ComponentDetailLevel = 1; // 0=Minimal, 1=Basic, 2=Full
+	UPROPERTY(config, EditAnywhere, Category="Documentation Generation", meta=(ToolTip="Controls how much detail is included for components: 0=Minimal (names only), 1=Basic (key properties), 2=Full (all properties)"))
+	int32 ComponentDetailLevel; // 0=Minimal, 1=Basic, 2=Full
     
-	UPROPERTY(config, EditAnywhere, Category="Documentation Generation")
-	bool bTrackVariableUsage = true;
+	UPROPERTY(config, EditAnywhere, Category="Documentation Generation", meta=(ToolTip="If enabled, the documentation will include information about where variables are used in the Blueprint"))
+	bool bTrackVariableUsage;
     
-	UPROPERTY(config, EditAnywhere, Category="Documentation Generation")
-	int32 MaxExecutionFlowDepth = 5;
+	UPROPERTY(config, EditAnywhere, Category="Documentation Generation", meta=(ToolTip="Limits how deep to follow execution chains in Blueprint graphs. Higher values provide more detail but can make documentation very long"))
+	int32 MaxExecutionFlowDepth;
 	
-	UPROPERTY(config, EditAnywhere, Category="Documentation Generation")
-	bool bIncludeComments = true;
+	UPROPERTY(config, EditAnywhere, Category="Documentation Generation", meta=(ToolTip="If enabled, comment boxes in the Blueprint will be included in the documentation"))
+	bool bIncludeComments;
 
-	UPROPERTY(config, EditAnywhere, Category="Documentation Generation")
-	TArray<FString> IgnoredPropertyPrefixes = { "Example" };  //
+	UPROPERTY(Config, EditAnywhere, Category = "Documentation Generation", meta=(ToolTip="If enabled, the documentation will include detailed descriptions of each variable in the Blueprint"))
+	bool bIncludeVariableDescriptions;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Documentation Generation", meta=(ToolTip="If enabled, the documentation will include detailed explanations of each function in the Blueprint"))
+	bool bIncludeFunctionBreakdowns;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Documentation Generation", meta=(ToolTip="If enabled, the documentation will include a high-level summary of what the Blueprint does"))
+	bool bIncludeOverallSummary;
+
+	UPROPERTY(config, EditAnywhere, Category="Documentation Generation", meta=(ToolTip="Component/property names that start with these prefixes will be excluded from documentation"))
+	TArray<FString> IgnoredPropertyPrefixes;
 
 	// The currently selected LLM provider
-	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration")
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration", meta=(ToolTip="Select which AI provider to use for generating documentation"))
 	ELLMProvider SelectedProvider;
 
 	// AI Prompt Settings
-	UPROPERTY(config, EditAnywhere, Category="AI Settings", meta=(DisplayName="System Prompt", MultiLine=true))
-	FString SystemPrompt = TEXT("You are a professional technical documentation writer specializing in Unreal Engine Blueprints. "
-							"Your task is to provide comprehensive, clear documentation that explains: "
-							"1. The purpose of the Blueprint (what it does) "
-							"2. How the Blueprint works (key mechanisms and flow) "
-							"3. Important variables and their purposes "
-							"4. Main function and event behaviors "
-							"5. Component setup and configuration "
-							"6. Recommendations for usage or potential improvements "
-							"Format the documentation in a clear, structured way with headings, bullet points, and code-like notation for Blueprint nodes. Dont specifically document individual node behaviours such as ForEach Loops, Then etc. Instead focus on summarizing the behaviour, intention and functionality of the blueprint.");
+	UPROPERTY(config, EditAnywhere, Category="AI Settings", meta=(DisplayName="System Prompt", MultiLine=true, ToolTip="This is the initial prompt that defines the AI's role and behavior when generating documentation"))
+	FString SystemPrompt;
 
-	UPROPERTY(config, EditAnywhere, Category= "AI Settings", meta=(DisplayName="Temperature", ClampMin="0.0", ClampMax="1.0"))
-	float Temperature = 0.5f;
+	UPROPERTY(config, EditAnywhere, Category= "AI Settings", meta=(DisplayName="Temperature", ClampMin="0.0", ClampMax="1.0", ToolTip="Controls the randomness of the AI's output. Lower values are more deterministic, higher values are more creative"))
+	float Temperature;
 
-	UPROPERTY(config, EditAnywhere, Category= "AI Settings", meta=(DisplayName="Max Tokens", ClampMin="100", ClampMax="16000"))
-	int32 MaxTokens = 4000;
+	UPROPERTY(config, EditAnywhere, Category= "AI Settings", meta=(DisplayName="Max Tokens", ClampMin="100", ClampMax="16000", ToolTip="The maximum length of the generated documentation (in tokens, roughly 4 characters per token)"))
+	int32 MaxTokens;
 
 	// OpenAI Configuration
-	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|OpenAI", meta = (EditCondition = "SelectedProvider == ELLMProvider::OpenAI"))
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|OpenAI", meta = (EditCondition = "SelectedProvider == ELLMProvider::OpenAI", ToolTip="Your OpenAI API key. Required to use OpenAI's services"))
 	FString OpenAIApiKey;
 
-	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|OpenAI", meta = (EditCondition = "SelectedProvider == ELLMProvider::OpenAI"))
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|OpenAI", meta = (EditCondition = "SelectedProvider == ELLMProvider::OpenAI", ToolTip="The OpenAI model to use (e.g., gpt-4, gpt-3.5-turbo)"))
 	FString OpenAIModel;
 
-	// Claude Configuration
-	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Claude", meta = (EditCondition = "SelectedProvider == ELLMProvider::Claude"))
-	FString ClaudeApiKey;
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|OpenAI", meta = (EditCondition = "SelectedProvider == ELLMProvider::OpenAI", ToolTip="The endpoint URL for OpenAI API calls. Usually leave as default unless using a proxy"))
+	FString OpenAIEndpoint;
 
-	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Claude", meta = (EditCondition = "SelectedProvider == ELLMProvider::Claude"))
+	// Claude Configuration
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Claude", meta = (EditCondition = "SelectedProvider == ELLMProvider::Claude", ToolTip="Your Anthropic Claude API key. Required to use Claude services"))
+	FString ClaudeApiKey;
+	
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Claude", meta = (EditCondition = "SelectedProvider == ELLMProvider::Claude", ToolTip="The Claude model to use (e.g., claude-2, claude-instant-1)"))
 	FString ClaudeModel;
+	
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Claude", meta = (EditCondition = "SelectedProvider == ELLMProvider::Claude", ToolTip="The endpoint URL for Claude API calls"))
+	FString ClaudeApiEndpoint;
 
 	// Other Provider Configuration
-	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Other", meta = (EditCondition = "SelectedProvider == ELLMProvider::Other"))
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Other", meta = (EditCondition = "SelectedProvider == ELLMProvider::Other", ToolTip="Name of the alternative AI provider you're using"))
 	FString OtherProviderName;
 
-	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Other", meta = (EditCondition = "SelectedProvider == ELLMProvider::Other"))
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Other", meta = (EditCondition = "SelectedProvider == ELLMProvider::Other", ToolTip="API key for the alternative provider"))
 	FString OtherProviderApiKey;
 
-	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Other", meta = (EditCondition = "SelectedProvider == ELLMProvider::Other"))
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Other", meta = (EditCondition = "SelectedProvider == ELLMProvider::Other", ToolTip="Endpoint URL for the alternative provider"))
 	FString OtherProviderEndpoint;
 	
 
-	// Documentation Settings
-	UPROPERTY(Config, EditAnywhere, Category = "Documentation")
-	bool bIncludeVariableDescriptions;
+	// Display Settings
 
-	UPROPERTY(Config, EditAnywhere, Category = "Documentation")
-	bool bIncludeFunctionBreakdowns;
-
-	UPROPERTY(Config, EditAnywhere, Category = "Documentation") 
-	bool bIncludeOverallSummary;
-
-	UPROPERTY(Config, EditAnywhere, Category = "Documentation") 
-	// Amount of characters in the preview of documentation in blueprint details
-	int32 DocumentationPreviewChars = 500;
+	UPROPERTY(Config, EditAnywhere, Category = "Display Settings", meta=(ToolTip="Maximum number of characters to show in the documentation preview in the Blueprint details panel"))
+	int32 DocumentationPreviewChars;
 
 public:
 	//~ Begin UDeveloperSettings Interface

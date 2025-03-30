@@ -1,4 +1,6 @@
-// Copyright Froströk. All Rights Reserved.
+// Copyright © Froströk. All Rights Reserved.
+// This plugin is governed by the Unreal Engine Marketplace EULA.
+// This software cannot be redistributed, modified, or resold outside of the original purchase.
 
 #include "LLMConnector.h"
 #include "HttpModule.h"
@@ -18,7 +20,7 @@ ULLMConnector::ULLMConnector()
 FString ULLMConnector::GenerateDocumentation(const FString& BlueprintInfo, const FString& CustomPrompt)
 {
 	// Create the prompt for the AI
-	FString Prompt = CreatePrompt(BlueprintInfo, CustomPrompt);
+	const FString Prompt = CreatePrompt(BlueprintInfo, CustomPrompt);
 
 	// Get the settings
 	const UUnrealMastermindSettings* Settings = GetDefault<UUnrealMastermindSettings>();
@@ -76,8 +78,8 @@ FString ULLMConnector::CreatePrompt(const FString& BlueprintInfo, const FString&
 FString ULLMConnector::GenerateWithOpenAI(const FString& Prompt)
 {
 	const UUnrealMastermindSettings* Settings = GetDefault<UUnrealMastermindSettings>();
-	FString ApiKey = Settings->OpenAIApiKey;
-	FString Model = Settings->OpenAIModel;
+	const FString ApiKey = Settings->OpenAIApiKey;
+	const FString Model = Settings->OpenAIModel;
 
 	if (ApiKey.IsEmpty())
 	{
@@ -85,24 +87,21 @@ FString ULLMConnector::GenerateWithOpenAI(const FString& Prompt)
 	}
 
 	// Create the JSON request
-	TSharedPtr<FJsonObject> RequestJsonObject = MakeShareable(new FJsonObject);
+	const TSharedPtr<FJsonObject> RequestJsonObject = MakeShareable(new FJsonObject);
 	RequestJsonObject->SetStringField(TEXT("model"), Model);
 
 	TArray<TSharedPtr<FJsonValue>> MessagesArray;
 
 	// System message
-	TSharedPtr<FJsonObject> SystemMessageObject = MakeShareable(new FJsonObject);
+	const TSharedPtr<FJsonObject> SystemMessageObject = MakeShareable(new FJsonObject);
 	SystemMessageObject->SetStringField(TEXT("role"), TEXT("system"));
 	SystemMessageObject->SetStringField(TEXT("content"), Settings->SystemPrompt);
 	MessagesArray.Add(MakeShareable(new FJsonValueObject(SystemMessageObject)));
 
 	// User message with the prompt
-	TSharedPtr<FJsonObject> UserMessageObject = MakeShareable(new FJsonObject);
+	const TSharedPtr<FJsonObject> UserMessageObject = MakeShareable(new FJsonObject);
 	UserMessageObject->SetStringField(TEXT("role"), TEXT("user"));
 	UserMessageObject->SetStringField(TEXT("content"), Prompt);
-
-	// Log the prompt being sent to the AI
-	UE_LOG(LogTemp, Warning, TEXT("Sending to AI: %s"), *Prompt);
 
 	MessagesArray.Add(MakeShareable(new FJsonValueObject(UserMessageObject)));
 
@@ -117,7 +116,7 @@ FString ULLMConnector::GenerateWithOpenAI(const FString& Prompt)
 
 	// Create the HTTP request
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
-	HttpRequest->SetURL(TEXT("https://api.openai.com/v1/chat/completions"));
+	HttpRequest->SetURL(Settings->OpenAIEndpoint);
 	HttpRequest->SetVerb(TEXT("POST"));
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	HttpRequest->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("Bearer %s"), *ApiKey));
@@ -132,7 +131,7 @@ FString ULLMConnector::GenerateWithOpenAI(const FString& Prompt)
 	HttpRequest->ProcessRequest();
 
 	// Wait for completion or timeout
-	double StartTime = FPlatformTime::Seconds();
+	const double StartTime = FPlatformTime::Seconds();
 	while (!bRequestComplete)
 	{
 		FPlatformProcess::Sleep(0.1f);
@@ -149,8 +148,8 @@ FString ULLMConnector::GenerateWithOpenAI(const FString& Prompt)
 FString ULLMConnector::GenerateWithClaude(const FString& Prompt)
 {
 	const UUnrealMastermindSettings* Settings = GetDefault<UUnrealMastermindSettings>();
-	FString ApiKey = Settings->ClaudeApiKey;
-	FString Model = Settings->ClaudeModel;
+	const FString ApiKey = Settings->ClaudeApiKey;
+	const FString Model = Settings->ClaudeModel;
 
 	if (ApiKey.IsEmpty())
 	{
@@ -158,19 +157,19 @@ FString ULLMConnector::GenerateWithClaude(const FString& Prompt)
 	}
 
 	// Create the JSON request
-	TSharedPtr<FJsonObject> RequestJsonObject = MakeShareable(new FJsonObject);
+	const TSharedPtr<FJsonObject> RequestJsonObject = MakeShareable(new FJsonObject);
 	RequestJsonObject->SetStringField(TEXT("model"), Model);
 
 	TArray<TSharedPtr<FJsonValue>> MessagesArray;
 
 	// System message
-	TSharedPtr<FJsonObject> SystemMessageObject = MakeShareable(new FJsonObject);
+	const TSharedPtr<FJsonObject> SystemMessageObject = MakeShareable(new FJsonObject);
 	SystemMessageObject->SetStringField(TEXT("role"), TEXT("system"));
 	SystemMessageObject->SetStringField(TEXT("content"), Settings->SystemPrompt);
 	MessagesArray.Add(MakeShareable(new FJsonValueObject(SystemMessageObject)));
 
 	// User message with the prompt
-	TSharedPtr<FJsonObject> UserMessageObject = MakeShareable(new FJsonObject);
+	const TSharedPtr<FJsonObject> UserMessageObject = MakeShareable(new FJsonObject);
 	UserMessageObject->SetStringField(TEXT("role"), TEXT("user"));
 	UserMessageObject->SetStringField(TEXT("content"), Prompt);
 	MessagesArray.Add(MakeShareable(new FJsonValueObject(UserMessageObject)));
@@ -181,12 +180,12 @@ FString ULLMConnector::GenerateWithClaude(const FString& Prompt)
 
 	// Convert to string
 	FString RequestBody;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
 	FJsonSerializer::Serialize(RequestJsonObject.ToSharedRef(), Writer);
 
 	// Create the HTTP request
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
-	HttpRequest->SetURL(TEXT("https://api.anthropic.com/v1/messages"));
+	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
+	HttpRequest->SetURL(Settings->ClaudeApiEndpoint);
 	HttpRequest->SetVerb(TEXT("POST"));
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	HttpRequest->SetHeader(TEXT("x-api-key"), ApiKey);
@@ -202,7 +201,7 @@ FString ULLMConnector::GenerateWithClaude(const FString& Prompt)
 	HttpRequest->ProcessRequest();
 
 	// Wait for completion or timeout
-	double StartTime = FPlatformTime::Seconds();
+	const double StartTime = FPlatformTime::Seconds();
 	while (!bRequestComplete)
 	{
 		FPlatformProcess::Sleep(0.1f);
@@ -219,8 +218,8 @@ FString ULLMConnector::GenerateWithClaude(const FString& Prompt)
 FString ULLMConnector::GenerateWithOtherProvider(const FString& Prompt)
 {
 	const UUnrealMastermindSettings* Settings = GetDefault<UUnrealMastermindSettings>();
-	FString ApiKey = Settings->OtherProviderApiKey;
-	FString Endpoint = Settings->OtherProviderEndpoint;
+	const FString ApiKey = Settings->OtherProviderApiKey;
+	const FString Endpoint = Settings->OtherProviderEndpoint;
 
 	if (ApiKey.IsEmpty() || Endpoint.IsEmpty())
 	{
@@ -229,18 +228,18 @@ FString ULLMConnector::GenerateWithOtherProvider(const FString& Prompt)
 	}
 
 	// Create a simple JSON request that most providers would accept
-	TSharedPtr<FJsonObject> RequestJsonObject = MakeShareable(new FJsonObject);
+	const TSharedPtr<FJsonObject> RequestJsonObject = MakeShareable(new FJsonObject);
 	RequestJsonObject->SetStringField(TEXT("prompt"), Prompt);
 	RequestJsonObject->SetNumberField(TEXT("max_tokens"), Settings->MaxTokens);
 	RequestJsonObject->SetNumberField(TEXT("temperature"), Settings->Temperature);
 
 	// Convert to string
 	FString RequestBody;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
 	FJsonSerializer::Serialize(RequestJsonObject.ToSharedRef(), Writer);
 
 	// Create the HTTP request
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
+	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
 	HttpRequest->SetURL(Endpoint);
 	HttpRequest->SetVerb(TEXT("POST"));
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
@@ -256,7 +255,7 @@ FString ULLMConnector::GenerateWithOtherProvider(const FString& Prompt)
 	HttpRequest->ProcessRequest();
 
 	// Wait for completion or timeout
-	double StartTime = FPlatformTime::Seconds();
+	const double StartTime = FPlatformTime::Seconds();
 	while (!bRequestComplete)
 	{
 		FPlatformProcess::Sleep(0.1f);
@@ -289,7 +288,7 @@ void ULLMConnector::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr
 
 	// Parse the JSON response
 	TSharedPtr<FJsonObject> JsonObject;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 
 	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
 	{
@@ -302,8 +301,8 @@ void ULLMConnector::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr
 			TArray<TSharedPtr<FJsonValue>> Choices = JsonObject->GetArrayField(TEXT("choices"));
 			if (Choices.Num() > 0)
 			{
-				TSharedPtr<FJsonObject> Choice = Choices[0]->AsObject();
-				TSharedPtr<FJsonObject> Message = Choice->GetObjectField(TEXT("message"));
+				const TSharedPtr<FJsonObject> Choice = Choices[0]->AsObject();
+				const TSharedPtr<FJsonObject> Message = Choice->GetObjectField(TEXT("message"));
 				Result = Message->GetStringField(TEXT("content"));
 			}
 			else
@@ -314,7 +313,7 @@ void ULLMConnector::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr
 		else if (Settings->SelectedProvider == ELLMProvider::Claude)
 		{
 			// Parse Claude response
-			TSharedPtr<FJsonObject> Content = JsonObject->GetObjectField(TEXT("content"));
+			const TSharedPtr<FJsonObject> Content = JsonObject->GetObjectField(TEXT("content"));
 			if (Content.IsValid())
 			{
 				TArray<TSharedPtr<FJsonValue>> Parts = Content->GetArrayField(TEXT("parts"));
