@@ -147,72 +147,77 @@ FString ULLMConnector::GenerateWithOpenAI(const FString& Prompt)
 
 FString ULLMConnector::GenerateWithClaude(const FString& Prompt)
 {
-	const UUnrealMastermindSettings* Settings = GetDefault<UUnrealMastermindSettings>();
-	const FString ApiKey = Settings->ClaudeApiKey;
-	const FString Model = Settings->ClaudeModel;
-
-	if (ApiKey.IsEmpty())
-	{
-		return TEXT("Error: Claude API key not provided. Please enter your API key in the plugin settings.");
-	}
-
-	// Create the JSON request
-	const TSharedPtr<FJsonObject> RequestJsonObject = MakeShareable(new FJsonObject);
-	RequestJsonObject->SetStringField(TEXT("model"), Model);
-
-	TArray<TSharedPtr<FJsonValue>> MessagesArray;
-
-	// System message
-	const TSharedPtr<FJsonObject> SystemMessageObject = MakeShareable(new FJsonObject);
-	SystemMessageObject->SetStringField(TEXT("role"), TEXT("system"));
-	SystemMessageObject->SetStringField(TEXT("content"), Settings->SystemPrompt);
-	MessagesArray.Add(MakeShareable(new FJsonValueObject(SystemMessageObject)));
-
-	// User message with the prompt
-	const TSharedPtr<FJsonObject> UserMessageObject = MakeShareable(new FJsonObject);
-	UserMessageObject->SetStringField(TEXT("role"), TEXT("user"));
-	UserMessageObject->SetStringField(TEXT("content"), Prompt);
-	MessagesArray.Add(MakeShareable(new FJsonValueObject(UserMessageObject)));
-
-	RequestJsonObject->SetArrayField(TEXT("messages"), MessagesArray);
+    const UUnrealMastermindSettings* Settings = GetDefault<UUnrealMastermindSettings>();
+    FString ApiKey = Settings->ClaudeApiKey;
+    FString Model = Settings->ClaudeModel;
+    FString Endpoint = Settings->ClaudeApiEndpoint;
+    
+    if (ApiKey.IsEmpty())
+    {
+        return TEXT("Error: Claude API key not provided. Please enter your API key in the plugin settings.");
+    }
+    
+    if (Endpoint.IsEmpty())
+    {
+        // Default Claude API endpoint
+        Endpoint = TEXT("https://api.anthropic.com/v1/messages");
+    }
+    
+    // Create the JSON request
+    TSharedPtr<FJsonObject> RequestJsonObject = MakeShareable(new FJsonObject);
+    RequestJsonObject->SetStringField(TEXT("model"), Model);
+    
+    // Set system prompt at top level for Claude
+    RequestJsonObject->SetStringField(TEXT("system"), Settings->SystemPrompt);
+    
+    // Create messages array (for Claude, this should only have user messages)
+    TArray<TSharedPtr<FJsonValue>> MessagesArray;
+    
+    // User message with the prompt
+    TSharedPtr<FJsonObject> UserMessageObject = MakeShareable(new FJsonObject);
+    UserMessageObject->SetStringField(TEXT("role"), TEXT("user"));
+    UserMessageObject->SetStringField(TEXT("content"), Prompt);
+    MessagesArray.Add(MakeShareable(new FJsonValueObject(UserMessageObject)));
+    
+    RequestJsonObject->SetArrayField(TEXT("messages"), MessagesArray);
     RequestJsonObject->SetNumberField(TEXT("max_tokens"), Settings->MaxTokens);
     RequestJsonObject->SetNumberField(TEXT("temperature"), Settings->Temperature);
-
-	// Convert to string
-	FString RequestBody;
-	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
-	FJsonSerializer::Serialize(RequestJsonObject.ToSharedRef(), Writer);
-
-	// Create the HTTP request
-	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
-	HttpRequest->SetURL(Settings->ClaudeApiEndpoint);
-	HttpRequest->SetVerb(TEXT("POST"));
-	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-	HttpRequest->SetHeader(TEXT("x-api-key"), ApiKey);
-	HttpRequest->SetHeader(TEXT("anthropic-version"), TEXT("2023-06-01"));
-	HttpRequest->SetContentAsString(RequestBody);
-
-	// Set up the response handling
-	Result.Empty();
-	bRequestComplete = false;
-	HttpRequest->OnProcessRequestComplete().BindUObject(this, &ULLMConnector::OnResponseReceived);
-
-	// Send the request
-	HttpRequest->ProcessRequest();
-
-	// Wait for completion or timeout
-	const double StartTime = FPlatformTime::Seconds();
-	while (!bRequestComplete)
-	{
-		FPlatformProcess::Sleep(0.1f);
-
-		if (FPlatformTime::Seconds() - StartTime > RequestTimeout)
-		{
-			return TEXT("Error: Request timed out.");
-		}
-	}
-
-	return Result;
+    
+    // Convert to string
+    FString RequestBody;
+    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
+    FJsonSerializer::Serialize(RequestJsonObject.ToSharedRef(), Writer);
+    
+    // Create the HTTP request
+    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
+    HttpRequest->SetURL(Endpoint);
+    HttpRequest->SetVerb(TEXT("POST"));
+    HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+    HttpRequest->SetHeader(TEXT("x-api-key"), ApiKey);
+    HttpRequest->SetHeader(TEXT("anthropic-version"), TEXT("2023-06-01"));  // Important for Claude API
+    HttpRequest->SetContentAsString(RequestBody);
+    
+    // Set up the response handling
+    Result.Empty();
+    bRequestComplete = false;
+    HttpRequest->OnProcessRequestComplete().BindUObject(this, &ULLMConnector::OnClaudeResponseReceived);
+    
+    // Send the request
+    HttpRequest->ProcessRequest();
+    
+    // Wait for completion or timeout
+    double StartTime = FPlatformTime::Seconds();
+    while (!bRequestComplete)
+    {
+        FPlatformProcess::Sleep(0.1f);
+        
+        if (FPlatformTime::Seconds() - StartTime > RequestTimeout)
+        {
+            return TEXT("Error: Request timed out.");
+        }
+    }
+    
+    return Result;
 }
 
 FString ULLMConnector::GenerateWithOtherProvider(const FString& Prompt)
@@ -364,3 +369,80 @@ void ULLMConnector::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr
 
 	bRequestComplete = true;
 }
+
+void ULLMConnector::OnClaudeResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+    if (bWasSuccessful && Response.IsValid())
+    {
+        TSharedPtr<FJsonObject> JsonObject;
+        TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+        
+        if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+        {
+            // Extract the content from Claude's response
+            if (JsonObject->HasField(TEXT("content")))
+            {
+                const TArray<TSharedPtr<FJsonValue>>* ContentArray = nullptr;
+                if (JsonObject->TryGetArrayField(TEXT("content"), ContentArray) && ContentArray != nullptr)
+                {
+                    FString ResultText;
+                    for (const TSharedPtr<FJsonValue>& ContentItem : *ContentArray)
+                    {
+                        const TSharedPtr<FJsonObject>* ContentObject = nullptr;
+                        if (ContentItem->TryGetObject(ContentObject) && ContentObject != nullptr)
+                        {
+                            FString TextValue;
+                            if ((*ContentObject)->TryGetStringField(TEXT("text"), TextValue))
+                            {
+                                ResultText += TextValue;
+                            }
+                        }
+                    }
+                    Result = ResultText;
+                }
+            }
+            else if (JsonObject->HasField(TEXT("error")))
+            {
+                // Handle error
+                const TSharedPtr<FJsonObject>* ErrorObject = nullptr;
+                if (JsonObject->TryGetObjectField(TEXT("error"), ErrorObject) && ErrorObject != nullptr)
+                {
+                    FString ErrorMessage;
+                    if ((*ErrorObject)->TryGetStringField(TEXT("message"), ErrorMessage))
+                    {
+                        Result = FString::Printf(TEXT("Error: %s"), *ErrorMessage);
+                    }
+                    else
+                    {
+                        Result = TEXT("Error: Unknown error occurred");
+                    }
+                }
+                else
+                {
+                    Result = TEXT("Error: Failed to parse error object");
+                }
+            }
+            else
+            {
+                Result = TEXT("Error: Unexpected response format");
+            }
+        }
+        else
+        {
+            Result = TEXT("Error: Failed to parse response JSON");
+        }
+    }
+    else
+    {
+        Result = TEXT("Error: Request failed");
+        
+        if (Response.IsValid())
+        {
+            Result += FString::Printf(TEXT(" (HTTP %d)"), Response->GetResponseCode());
+            Result += TEXT(" - ") + Response->GetContentAsString();
+        }
+    }
+    
+    bRequestComplete = true;
+}
+

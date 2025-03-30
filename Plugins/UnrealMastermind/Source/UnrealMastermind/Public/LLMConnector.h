@@ -30,6 +30,7 @@ private:
 	
 	// HTTP Request handlers
 	void OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	void OnClaudeResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	
 	// Default timeout in seconds
 	float RequestTimeout;
