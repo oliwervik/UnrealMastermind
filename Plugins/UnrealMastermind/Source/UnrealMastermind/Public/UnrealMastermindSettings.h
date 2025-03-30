@@ -12,7 +12,7 @@ UENUM(BlueprintType)
 enum class ELLMProvider : uint8
 {
 	OpenAI UMETA(DisplayName = "OpenAI"),
-	Claude UMETA(DisplayName = "Claude"),
+	Anthropic UMETA(DisplayName = "Anthropic"),
 	Other UMETA(DisplayName = "Other")
 };
 
@@ -72,15 +72,15 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|OpenAI", meta = (EditCondition = "SelectedProvider == ELLMProvider::OpenAI", ToolTip="The endpoint URL for OpenAI API calls. Usually leave as default unless using a proxy"))
 	FString OpenAIEndpoint;
 
-	// Claude Configuration
-	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Claude", meta = (EditCondition = "SelectedProvider == ELLMProvider::Claude", ToolTip="Your Anthropic Claude API key. Required to use Claude services"))
-	FString ClaudeApiKey;
+	// Anthropic Configuration
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Anthropic", meta = (EditCondition = "SelectedProvider == ELLMProvider::Anthropic", ToolTip="Your Anthropic API key. Required to use Anthropic services"))
+	FString AnthropicApiKey;
 	
-	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Claude", meta = (EditCondition = "SelectedProvider == ELLMProvider::Claude", ToolTip="The Claude model to use (e.g., claude-2, claude-instant-1)"))
-	FString ClaudeModel;
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Anthropic", meta = (EditCondition = "SelectedProvider == ELLMProvider::Anthropic", ToolTip="The Anthropic model to use (e.g., claude-2, claude-instant-1)"))
+	FString AnthropicModel;
 	
-	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Claude", meta = (EditCondition = "SelectedProvider == ELLMProvider::Claude", ToolTip="The endpoint URL for Claude API calls"))
-	FString ClaudeApiEndpoint;
+	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Anthropic", meta = (EditCondition = "SelectedProvider == ELLMProvider::Anthropic", ToolTip="The endpoint URL for Anthropic API calls"))
+	FString AnthropicApiEndpoint;
 
 	// Other Provider Configuration
 	UPROPERTY(Config, EditAnywhere, Category = "LLM Configuration|Other", meta = (EditCondition = "SelectedProvider == ELLMProvider::Other", ToolTip="Name of the alternative AI provider you're using"))

@@ -30,8 +30,8 @@ FString ULLMConnector::GenerateDocumentation(const FString& BlueprintInfo, const
 	{
 	case ELLMProvider::OpenAI:
 		return GenerateWithOpenAI(Prompt);
-	case ELLMProvider::Claude:
-		return GenerateWithClaude(Prompt);
+	case ELLMProvider::Anthropic:
+		return GenerateWithAnthropic(Prompt);
 	case ELLMProvider::Other:
 		return GenerateWithOtherProvider(Prompt);
 	default:
@@ -145,21 +145,21 @@ FString ULLMConnector::GenerateWithOpenAI(const FString& Prompt)
 	return Result;
 }
 
-FString ULLMConnector::GenerateWithClaude(const FString& Prompt)
+FString ULLMConnector::GenerateWithAnthropic(const FString& Prompt)
 {
     const UUnrealMastermindSettings* Settings = GetDefault<UUnrealMastermindSettings>();
-    FString ApiKey = Settings->ClaudeApiKey;
-    FString Model = Settings->ClaudeModel;
-    FString Endpoint = Settings->ClaudeApiEndpoint;
+    FString ApiKey = Settings->AnthropicApiKey;
+    FString Model = Settings->AnthropicModel;
+    FString Endpoint = Settings->AnthropicApiEndpoint;
     
     if (ApiKey.IsEmpty())
     {
-        return TEXT("Error: Claude API key not provided. Please enter your API key in the plugin settings.");
+        return TEXT("Error: Anthropic API key not provided. Please enter your API key in the plugin settings.");
     }
     
     if (Endpoint.IsEmpty())
     {
-        // Default Claude API endpoint
+        // Default Anthropic API endpoint
         Endpoint = TEXT("https://api.anthropic.com/v1/messages");
     }
     
@@ -167,10 +167,10 @@ FString ULLMConnector::GenerateWithClaude(const FString& Prompt)
     TSharedPtr<FJsonObject> RequestJsonObject = MakeShareable(new FJsonObject);
     RequestJsonObject->SetStringField(TEXT("model"), Model);
     
-    // Set system prompt at top level for Claude
+    // Set system prompt at top level for Anthropic
     RequestJsonObject->SetStringField(TEXT("system"), Settings->SystemPrompt);
     
-    // Create messages array (for Claude, this should only have user messages)
+    // Create messages array (for Anthropic, this should only have user messages)
     TArray<TSharedPtr<FJsonValue>> MessagesArray;
     
     // User message with the prompt
@@ -194,13 +194,13 @@ FString ULLMConnector::GenerateWithClaude(const FString& Prompt)
     HttpRequest->SetVerb(TEXT("POST"));
     HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
     HttpRequest->SetHeader(TEXT("x-api-key"), ApiKey);
-    HttpRequest->SetHeader(TEXT("anthropic-version"), TEXT("2023-06-01"));  // Important for Claude API
+    HttpRequest->SetHeader(TEXT("anthropic-version"), TEXT("2023-06-01"));  // Important for Anthropic API
     HttpRequest->SetContentAsString(RequestBody);
     
     // Set up the response handling
     Result.Empty();
     bRequestComplete = false;
-    HttpRequest->OnProcessRequestComplete().BindUObject(this, &ULLMConnector::OnClaudeResponseReceived);
+    HttpRequest->OnProcessRequestComplete().BindUObject(this, &ULLMConnector::OnAnthropicResponseReceived);
     
     // Send the request
     HttpRequest->ProcessRequest();
@@ -315,9 +315,9 @@ void ULLMConnector::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr
 				Result = TEXT("Error: Could not parse API response from OpenAI.");
 			}
 		}
-		else if (Settings->SelectedProvider == ELLMProvider::Claude)
+		else if (Settings->SelectedProvider == ELLMProvider::Anthropic)
 		{
-			// Parse Claude response
+			// Parse Anthropic response
 			const TSharedPtr<FJsonObject> Content = JsonObject->GetObjectField(TEXT("content"));
 			if (Content.IsValid())
 			{
@@ -328,12 +328,12 @@ void ULLMConnector::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr
 				}
 				else
 				{
-					Result = TEXT("Error: Could not parse API response from Claude.");
+					Result = TEXT("Error: Could not parse API response from Anthropic.");
 				}
 			}
 			else
 			{
-				Result = TEXT("Error: Could not parse API response from Claude.");
+				Result = TEXT("Error: Could not parse API response from Anthropic.");
 			}
 		}
 		else
@@ -370,7 +370,7 @@ void ULLMConnector::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr
 	bRequestComplete = true;
 }
 
-void ULLMConnector::OnClaudeResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+void ULLMConnector::OnAnthropicResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
     if (bWasSuccessful && Response.IsValid())
     {
@@ -379,7 +379,7 @@ void ULLMConnector::OnClaudeResponseReceived(FHttpRequestPtr Request, FHttpRespo
         
         if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
         {
-            // Extract the content from Claude's response
+            // Extract the content from Anthropic's response
             if (JsonObject->HasField(TEXT("content")))
             {
                 const TArray<TSharedPtr<FJsonValue>>* ContentArray = nullptr;

@@ -93,7 +93,7 @@ void FUnrealMastermindModule::RegisterMenus()
 	{
 		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Tools");
 		{
-			FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
+			FToolMenuSection& Section = Menu->FindOrAddSection("Documentation");
 			Section.AddMenuEntryWithCommandList(FUnrealMastermindCommands::Get().OpenPluginWindow, PluginCommands);
 		}
 	}

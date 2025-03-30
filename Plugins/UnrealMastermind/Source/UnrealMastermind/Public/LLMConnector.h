@@ -22,7 +22,7 @@ public:
 private:
 	// Provider-specific implementations
 	FString GenerateWithOpenAI(const FString& Prompt);
-	FString GenerateWithClaude(const FString& Prompt);
+	FString GenerateWithAnthropic(const FString& Prompt);
 	FString GenerateWithOtherProvider(const FString& Prompt);
 	
 	// Helper methods
@@ -30,7 +30,7 @@ private:
 	
 	// HTTP Request handlers
 	void OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
-	void OnClaudeResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	void OnAnthropicResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 	
 	// Default timeout in seconds
 	float RequestTimeout;

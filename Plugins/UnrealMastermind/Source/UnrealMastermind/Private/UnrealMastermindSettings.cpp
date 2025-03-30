@@ -12,8 +12,8 @@ UUnrealMastermindSettings::UUnrealMastermindSettings()
 	// Default model settings
 	OpenAIModel = TEXT("gpt-4");
 	OpenAIEndpoint = TEXT("https://api.openai.com/v1/chat/completions");
-	ClaudeModel = TEXT("claude-3-5-haiku-latest");
-	ClaudeApiEndpoint = TEXT("https://api.anthropic.com/v1/messages");
+	AnthropicModel = TEXT("claude-3-5-haiku-latest");
+	AnthropicApiEndpoint = TEXT("https://api.anthropic.com/v1/messages");
 
 	// Default documentation settings
 	bIncludeVariableDescriptions = true;
