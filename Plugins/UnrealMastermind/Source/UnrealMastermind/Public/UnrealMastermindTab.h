@@ -6,10 +6,10 @@
 
 #include "CoreMinimal.h"
 #include "BlueprintDocumentationSettings.h"
+#include "SSearchableComboBox.h"
 #include "Widgets/SCompoundWidget.h"
 #include "EdGraph/EdGraphNode.h"
 #include "Widgets/Input/SMultiLineEditableTextBox.h"
-#include "Widgets/Text/SRichTextBlock.h"
 #include "Widgets/Notifications/SProgressBar.h"
 
 class SUnrealMastermindTab : public SCompoundWidget
@@ -25,7 +25,7 @@ public:
 	void SelectBlueprint(const FString& BlueprintName);
 private:
 	// UI Elements
-	TSharedPtr<SComboBox<TSharedPtr<FString>>> BlueprintSelectionComboBox;
+	TSharedPtr<SSearchableComboBox> BlueprintSelectionComboBox;
 	TArray<TSharedPtr<FString>> AvailableBlueprints;
 	TSharedPtr<STextBlock> SelectedBlueprintText;
 	TSharedPtr<SMultiLineEditableTextBox> DocumentationTextBox;

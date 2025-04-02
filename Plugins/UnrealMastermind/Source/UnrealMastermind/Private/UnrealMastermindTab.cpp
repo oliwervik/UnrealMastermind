@@ -16,6 +16,7 @@
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
+#include "SSearchableComboBox.h"
 #include "UnrealMastermindSettings.h"
 #include "EdGraph/EdGraphPin.h"
 #include "Engine/SCS_Node.h"
@@ -70,10 +71,13 @@ void SUnrealMastermindTab::Construct(const FArguments& InArgs)
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.0f)
 			[
-				SAssignNew(BlueprintSelectionComboBox, SComboBox<TSharedPtr<FString>>)
-				.OptionsSource(&AvailableBlueprints)
-				.OnGenerateWidget(this, &SUnrealMastermindTab::MakeBlueprintComboItemWidget)
-				.OnSelectionChanged(this, &SUnrealMastermindTab::OnBlueprintSelected)
+				SAssignNew(BlueprintSelectionComboBox, SSearchableComboBox)
+		.OptionsSource(&AvailableBlueprints)
+		.OnGenerateWidget(this, &SUnrealMastermindTab::MakeBlueprintComboItemWidget)
+		.OnSelectionChanged(this, &SUnrealMastermindTab::OnBlueprintSelected)
+		.ContentPadding(FMargin(2.0f, 2.0f))
+		.MaxListHeight(200.0f)
+		.Content()
 				[
 					SAssignNew(SelectedBlueprintText, STextBlock)
 					.Text(FText::FromString("Select a Blueprint"))
@@ -85,8 +89,8 @@ void SUnrealMastermindTab::Construct(const FArguments& InArgs)
 			  .Padding(10, 0, 0, 0)
 			[
 				SNew(SButton)
-				.Text(FText::FromString("Refresh"))
-				.OnClicked_Lambda([this]()
+		.Text(FText::FromString("Refresh"))
+		.OnClicked_Lambda([this]()
 				             {
 					             PopulateAvailableBlueprints();
 					             return FReply::Handled();
@@ -287,16 +291,16 @@ void SUnrealMastermindTab::Construct(const FArguments& InArgs)
 		.FillHeight(1.0f)
 		[
 			SNew(SVerticalBox)
-			
-			+SVerticalBox::Slot()
-			.AutoHeight()
-			.Padding(0, 0, 0, 5)
+
+			+ SVerticalBox::Slot()
+			  .AutoHeight()
+			  .Padding(0, 0, 0, 5)
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString("Generated Documentation:"))
 			]
-			
-			+SVerticalBox::Slot()
+
+			+ SVerticalBox::Slot()
 			.FillHeight(1.0f)
 			[
 				SAssignNew(DocumentationTextBox, SMultiLineEditableTextBox)
@@ -439,7 +443,8 @@ void SUnrealMastermindTab::OnBlueprintSelected(TSharedPtr<FString> SelectedItem,
 		// Check if the selected blueprint has documentation and load it
 		if (UBlueprint* Blueprint = GetSelectedBlueprint())
 		{
-			if (FString ExistingDocumentation = UBlueprintDocumentation::GetDocumentation(Blueprint); !ExistingDocumentation.IsEmpty())
+			if (FString ExistingDocumentation = UBlueprintDocumentation::GetDocumentation(Blueprint); !
+				ExistingDocumentation.IsEmpty())
 			{
 				// Existing documentation found, load it
 				GeneratedDocumentation = ExistingDocumentation;
@@ -895,7 +900,7 @@ FReply SUnrealMastermindTab::OnGenerateDocumentationClicked()
 			// Now it's safe to update UI elements
 			GeneratedDocumentation = GeneratedDoc;
 			DocumentationTextBox->SetText(FText::FromString(GeneratedDocumentation));
-			
+
 			// Hide the loading indicator
 			SetGenerationStatus(false, 1.0f, "Generation complete");
 

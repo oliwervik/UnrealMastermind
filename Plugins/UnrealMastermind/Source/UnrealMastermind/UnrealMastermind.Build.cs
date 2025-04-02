@@ -39,6 +39,7 @@ public class UnrealMastermind : ModuleRules
 				"ToolMenus",
 				"KismetWidgets",
 				"GraphEditor",
+				"ToolWidgets"
 			}
 		);
 	}
