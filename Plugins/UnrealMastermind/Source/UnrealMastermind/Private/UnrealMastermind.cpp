@@ -3,7 +3,6 @@
 // This software cannot be redistributed, modified, or resold outside of the original purchase.
 
 #include "UnrealMastermind.h"
-
 #include "UnrealMastermindStyle.h"
 #include "UnrealMastermindCommands.h"
 #include "UnrealMastermindTab.h"

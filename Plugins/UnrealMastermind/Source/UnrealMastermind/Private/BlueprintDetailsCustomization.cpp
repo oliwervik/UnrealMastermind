@@ -26,45 +26,28 @@ void FBlueprintDetailsCustomization::Register()
     if (!bIsRegistered)
     {
         FPropertyEditorModule& PropertyModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
-       
-        //Register UBlueprint class itself (for Blueprint assets in the editor)
-        PropertyModule.RegisterCustomClassLayout(
-            UBlueprint::StaticClass()->GetFName(),
-            FOnGetDetailCustomizationInstance::CreateStatic(&FBlueprintDetailsCustomization::MakeInstance)
-        );
+        
         
         //Register important base classes that are commonly used as Blueprint parents
         TArray<UClass*> BlueprintBaseClasses;
-        BlueprintBaseClasses.Add(AActor::StaticClass());
-        BlueprintBaseClasses.Add(UActorComponent::StaticClass());
-        BlueprintBaseClasses.Add(APawn::StaticClass());
-        BlueprintBaseClasses.Add(ACharacter::StaticClass());
-        BlueprintBaseClasses.Add(UUserWidget::StaticClass());
-        //We can add other important base classes here if needed
+        BlueprintBaseClasses.Add(AActor::StaticClass()->ClassGeneratedBy->StaticClass());
+        BlueprintBaseClasses.Add(UActorComponent::StaticClass()->ClassGeneratedBy->StaticClass());
+        BlueprintBaseClasses.Add(APawn::StaticClass()->ClassGeneratedBy->StaticClass());
+        BlueprintBaseClasses.Add(ACharacter::StaticClass()->ClassGeneratedBy->StaticClass());
+        BlueprintBaseClasses.Add(UUserWidget::StaticClass()->ClassGeneratedBy->StaticClass());
+        // We can add other important base classes here if needed ->
         
-        for (UClass* BaseClass : BlueprintBaseClasses)
+        for (const UClass* BaseClass : BlueprintBaseClasses)
         {
-            PropertyModule.RegisterCustomClassLayout(
-                BaseClass->GetFName(),
-                FOnGetDetailCustomizationInstance::CreateStatic(&FBlueprintDetailsCustomization::MakeInstance)
-            );
-        }
-        
-        //Register all Blueprint-generated classes
-        for (TObjectIterator<UClass> It; It; ++It)
-        {
-            UClass* Class = *It;
-            
-            // Check if this is a Blueprint-generated class
-            if (Class && Class->ClassGeneratedBy && Cast<UBlueprint>(Class->ClassGeneratedBy))
+            if(BaseClass)
             {
                 PropertyModule.RegisterCustomClassLayout(
-                    Class->GetFName(),
+                    BaseClass->GetFName(),
                     FOnGetDetailCustomizationInstance::CreateStatic(&FBlueprintDetailsCustomization::MakeInstance)
                 );
             }
         }
-
+        
         bIsRegistered = true;
         PropertyModule.NotifyCustomizationModuleChanged();
     }
@@ -133,7 +116,7 @@ void FBlueprintDetailsCustomization::CustomizeDetails(IDetailLayoutBuilder& Deta
     IDetailCategoryBuilder& Category = DetailBuilder.EditCategory(
         "Documentation",
         FText::FromString("Documentation"),
-        ECategoryPriority::Important
+        ECategoryPriority::Default
     );
     
     // Add a custom row for the documentation status
