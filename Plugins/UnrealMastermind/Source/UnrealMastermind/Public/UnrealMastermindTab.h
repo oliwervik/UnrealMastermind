@@ -7,6 +7,8 @@
 #include "SSearchableComboBox.h"
 #include "Widgets/SCompoundWidget.h"
 #include "EdGraph/EdGraphNode.h"
+#include "Engine/SCS_Node.h"
+#include "Engine/SimpleConstructionScript.h"
 #include "Widgets/Input/SMultiLineEditableTextBox.h"
 #include "Widgets/Notifications/SProgressBar.h"
 
