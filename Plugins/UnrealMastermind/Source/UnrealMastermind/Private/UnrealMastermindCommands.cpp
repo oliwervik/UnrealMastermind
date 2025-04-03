@@ -1,6 +1,4 @@
-// Copyright © Froströk. All Rights Reserved.
-// This plugin is governed by the Unreal Engine Marketplace EULA.
-// This software cannot be redistributed, modified, or resold outside of the original purchase.
+// Copyright 2025 © Froströk. All Rights Reserved.
 
 #include "UnrealMastermindCommands.h"
 
